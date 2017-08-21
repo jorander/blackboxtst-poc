@@ -21,5 +21,6 @@ Even in this small size the PoC proves that the idea works and also demonstrates
 
 ## Possible improvements and additions
 * List of tests to be run in suites can be set up as List&lt;TestCase&gt;, hence being compilable and statically checked for existence.
+* Use [Hamcrest matchers](http://hamcrest.org/JavaHamcrest/) to make the tests more readable.
 
 Any comments, suggestions and improvement proposals are greatly welcome.

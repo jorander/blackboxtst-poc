@@ -10,7 +10,8 @@ import org.junit.Assert.*
 
 @Suppress("MemberVisibilityCanPrivate")
 class ReceiveDocument(
-        val customer: TestPerson = TestPerson("SEARCH_CRITERIA_1")
+        val customer: TestPerson = TestPerson { "SEARCH_CRITERIA_1" },
+        val relatedCustomer: TestPerson= TestPerson { "SEARCH_CRITERIA_RELATED: ${customer.values.pnr}" }
 ) : TestCase("A simple test case that can be run separately or included into a larger test case.") {
 
     override fun test(): TestScript {

@@ -1,16 +1,16 @@
 package jorander.blackboxtstpoc.core
 
-class TestPerson(searchCriteria: String) {
+class TestPerson(searchCriteria: () -> String) {
     var searchCriteria = searchCriteria
         private set
 
-    fun addSearchCriteria(other: String){
-        if (!searchCriteria.contains(other)){
-            searchCriteria += (" " + other)
+    fun addSearchCriteria(otherCriteria: () -> String) {
+        if (!searchCriteria().contains(otherCriteria())) {
+            searchCriteria =  searchCriteria.let { firstCriteria -> {firstCriteria() + " " + otherCriteria()} }
         }
     }
 
-    lateinit var values: TestPersonValues
+    var values = TestPersonValues("dummy")
 }
 
 data class TestPersonValues(val pnr: String)

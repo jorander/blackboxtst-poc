@@ -10,14 +10,15 @@ class BasicTestCaseWithTest {
 
     @Suppress("MemberVisibilityCanPrivate")
     class BasicTestCase(
-            val customer: TestPerson = TestPerson("SEARCH_CRITERIA_2")
+            val customer: TestPerson = TestPerson { "SEARCH_CRITERIA_2" },
+            val relatedCustomer: TestPerson = TestPerson { "SEARCH_CRITERIA_RELATED_2" }
     ) : TestCase("A basic test case to demonstrate usage.") {
         override fun test(): TestScript {
             var documentId: DocumentId? = null
             var caseId: CaseId? = null
 
             return TestScript
-                    .include<Pair<DocumentId, CaseId>>(ReceiveDocument(customer)) { (dId, cId) ->
+                    .include<Pair<DocumentId, CaseId>>(ReceiveDocument(customer, relatedCustomer)) { (dId, cId) ->
                         println("documentId = $dId")
                         documentId = dId
                         println("caseId = $cId")
@@ -43,9 +44,16 @@ class BasicTestCaseWithTest {
         val DOC_ID = DocumentId("doc1")
         BasicTestCase().run(object : TestToolboxImpl() {
             override fun findTestPerson(searchCriteria: String): TestPersonValues {
-                assertTrue("Search criteria should include criteria from included test", searchCriteria.contains("SEARCH_CRITERIA_1"))
-                assertTrue("Search criteria should include criteria from this test", searchCriteria.contains("SEARCH_CRITERIA_2"))
-                return TestPersonValues(CUSTOMERS_PNR)
+                return if (searchCriteria.contains("SEARCH_CRITERIA_1")) {
+                    assertTrue("Search criteria should include criteria from included test", searchCriteria.contains("SEARCH_CRITERIA_1"))
+                    assertTrue("Search criteria should include criteria from this test", searchCriteria.contains("SEARCH_CRITERIA_2"))
+                    TestPersonValues(CUSTOMERS_PNR)
+                } else {
+                    assertTrue("Search criteria should include criteria", searchCriteria.contains("SEARCH_CRITERIA_RELATED"))
+                    assertTrue("Search criteria should include other customers pnr", searchCriteria.contains(CUSTOMERS_PNR))
+                    assertTrue("Search criteria should include criteria", searchCriteria.contains("SEARCH_CRITERIA_RELATED_2"))
+                    TestPersonValues("5501012863")
+                }
             }
 
             override fun receiveDocument(xmlDoc: String): Pair<DocumentId, CaseId?> {

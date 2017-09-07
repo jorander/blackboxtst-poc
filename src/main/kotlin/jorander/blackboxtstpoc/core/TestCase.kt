@@ -1,11 +1,20 @@
 package jorander.blackboxtstpoc.core
 
-import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
 
+@Suppress("LeakingThis")
 abstract class TestCase(val description: String = "No description") {
+    init {
+        if (this::class.constructors.size != 1)
+            throw IllegalStateException("Test case \"${this::class.simpleName}\" is only allowed to have one constructor.")
+
+        this::class.constructors.first().parameters
+                .onEach { if (it.name == null) throw IllegalStateException("All constructor parameters in test case must be named.") }
+                .filter { it.type.isSubtypeOf(TestPerson::class.starProjectedType) }
+                .forEach { if (!it.isOptional)  throw IllegalStateException("All parameters of TestPerson must have default values.")}
+    }
 
     abstract fun test(): TestScript
 
@@ -16,7 +25,7 @@ abstract class TestCase(val description: String = "No description") {
         val internalTestScript = test() as InternalTestScriptImpl
 
         declaredTestPersons(this)
-                .onEach { (_, testPerson) -> testPerson.values = testToolboxImpl.findTestPerson(testPerson.searchCriteria) }
+                .onEach { (_, testPerson) -> testPerson.values = testToolboxImpl.findTestPerson(testPerson.searchCriteria()) }
                 .forEach { (name, testPerson) -> println("Using: $name - ${testPerson.values.pnr}") }
 
         try {
@@ -72,10 +81,23 @@ private open class TestScriptImpl : TestScriptBuilder {
     }
 
     override fun <R> include(testCase: TestCase, callback: (R) -> Unit): TestScriptBuilder {
-        val defaultTestPersons = declaredTestPersons(testCase::class.createInstance())
+        val testCaseConstructor = testCase::class.constructors.first() // Can only have one
+
+        val allConstructorParameters = testCaseConstructor.parameters
+                .map { Pair(it.name!!, it) }.toMap() // All parameters are named
+
+        val memberProperties = testCase::class.memberProperties
+                .map { Pair(it.name, it.getter.call(testCase)) }.toMap()
 
         declaredTestPersons(testCase).forEach { (name, testPerson) ->
-            testPerson.addSearchCriteria(defaultTestPersons[name]!!.searchCriteria)
+            testPerson
+                    .addSearchCriteria(
+                            declaredTestPersons(
+                                    testCaseConstructor.callBy(allConstructorParameters
+                                            .filterKeys { it != name }
+                                            .map { (parameterName, parameter) -> Pair(parameter, memberProperties[parameterName]) }.toMap()
+                                    )
+                            )[name]!!.searchCriteria)
         }
 
         steps.add(Include(testCase, callback))

@@ -6,6 +6,9 @@ import kotlin.reflect.full.starProjectedType
 
 @Suppress("LeakingThis")
 abstract class TestCase(val description: String = "No description") {
+
+    open fun testSuite() = listOf(this)
+
     init {
         if (this::class.constructors.size != 1)
             throw IllegalStateException("Test case \"${this::class.simpleName}\" is only allowed to have one constructor.")

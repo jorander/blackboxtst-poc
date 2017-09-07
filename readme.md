@@ -18,9 +18,11 @@ Even in this small size the PoC proves that the idea works and also demonstrates
 * Test cases can be reused by inclusion into other test cases.
 * Each test case, even when included in another test case, defines the test data it needs. When included, needs of the different test cases are accumulated into one test data definition.
 * Test cases can be unit tested by stubbing the TestToolbox. This minimises the risk of programming errors in designing the tests.
+* Test cases can be parametrized and instantiated multiple times using common programming idioms such as generated ranges.
 
 ## Possible improvements and additions
 * List of tests to be run in suites can be set up as List&lt;TestCase&gt;, hence being compilable and statically checked for existence.
 * Use [Hamcrest matchers](http://hamcrest.org/JavaHamcrest/) to make the tests more readable.
+* Small utility functions generating for example parts of test person search criteria can be written using the programming language.
 
 Any comments, suggestions and improvement proposals are greatly welcome.

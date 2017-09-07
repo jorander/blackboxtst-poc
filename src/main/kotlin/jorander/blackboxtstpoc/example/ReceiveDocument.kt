@@ -11,7 +11,8 @@ import org.junit.Assert.*
 @Suppress("MemberVisibilityCanPrivate")
 class ReceiveDocument(
         val customer: TestPerson = TestPerson { "SEARCH_CRITERIA_1" },
-        val relatedCustomer: TestPerson= TestPerson { "SEARCH_CRITERIA_RELATED: ${customer.values.pnr}" }
+        val relatedCustomer: TestPerson = TestPerson { "SEARCH_CRITERIA_RELATED: ${customer.values.pnr}" },
+        val year: Int = 2017
 ) : TestCase("A simple test case that can be run separately or included into a larger test case.") {
 
     override fun test(): TestScript {
@@ -19,7 +20,7 @@ class ReceiveDocument(
         var caseId: CaseId? = null
         return TestScript
                 .step("Customer sends in document") {
-                    val (docId, cId) = receiveDocument("fake document from customer: ${customer.values.pnr}")
+                    val (docId, cId) = receiveDocument("fake document from customer: ${customer.values.pnr} for year: $year")
                     documentId = docId
                     caseId = cId
                 }
@@ -29,5 +30,9 @@ class ReceiveDocument(
                     assertEquals("Case should be open", CaseStatus.OPEN, case.status)
                 }
                 .returns { Pair(documentId!!, caseId!!) }
+    }
+
+    override fun testSuite(): List<TestCase> {
+        return (1999..2018).map { ReceiveDocument(year = it)}
     }
 }

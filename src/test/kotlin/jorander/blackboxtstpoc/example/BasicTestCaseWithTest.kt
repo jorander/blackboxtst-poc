@@ -103,4 +103,17 @@ class BasicTestCaseWithTest {
             */
         })
     }
+
+    @Test(expected = AssertionError::class)
+    fun runWithNullAsCaseId() {
+        BasicTestCase().run(object: TestToolboxImpl(){
+            override fun findTestPerson(searchCriteria: String): TestPersonValues {
+                return TestPersonValues("Some PNR")
+            }
+
+            override fun receiveDocument(xmlDoc: String): Pair<DocumentId, CaseId?> {
+                return Pair(DocumentId("doc10"), null)
+            }
+        })
+    }
 }

@@ -147,6 +147,10 @@ private class Returns(description: String, val code: () -> Any) : TestScriptStep
 }
 
 private class Include<in R>(val testCase: TestCase, val callback: (R) -> Unit) : TestScriptStep("Including ${testCase::class.qualifiedName}") {
+    /* TODO: Här lär vi behöva init-kod som anropar testCase.test() och plockar ut testskriptet i syfte att
+       exekvera include-steg som inte ligger först i det inkluderade testfallet. Annars kommer inte testperson-sökningen
+       att slås samman i tid. Bygg test som bevisar detta!!
+    */
     @Suppress("UNCHECKED_CAST")
     override fun executeAction(testToolboxImpl: TestToolboxImpl): Any {
         val result = (testCase.test() as InternalTestScriptImpl).execute(testToolboxImpl)

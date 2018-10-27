@@ -1,11 +1,12 @@
 package jorander.blackboxtstpoc.core
 
+import kotlin.reflect.KVisibility.PRIVATE
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
 
 @Suppress("LeakingThis")
-abstract class TestCase(val description: String = "No description") {
+abstract class TestCase(private val description: String = "No description") {
 
     open fun testSuite() = listOf(this)
 
@@ -13,10 +14,13 @@ abstract class TestCase(val description: String = "No description") {
         if (this::class.constructors.size != 1)
             throw IllegalStateException("Test case \"${this::class.simpleName}\" is only allowed to have one constructor.")
 
-        this::class.constructors.first().parameters
+        this::class.constructors.first().parameters.asSequence()
                 .onEach { if (it.name == null) throw IllegalStateException("All constructor parameters in test case must be named.") }
                 .filter { it.type.isSubtypeOf(TestPerson::class.starProjectedType) }
-                .forEach { if (!it.isOptional)  throw IllegalStateException("All parameters of TestPerson must have default values.")}
+                .forEach { if (!it.isOptional) throw IllegalStateException("All parameters of type TestPerson must have default values.") }
+
+        testPersonParameters(this)
+                .forEach { if (it.visibility == PRIVATE) throw IllegalStateException("All parameters of type TestPerson must be non-private.") }
     }
 
     abstract fun test(): TestScript
@@ -47,8 +51,11 @@ abstract class TestCase(val description: String = "No description") {
     }
 }
 
-private fun declaredTestPersons(testCase: TestCase) =
+private fun testPersonParameters(testCase: TestCase) =
         testCase::class.memberProperties.filter { it.returnType.isSubtypeOf(TestPerson::class.starProjectedType) }
+
+private fun declaredTestPersons(testCase: TestCase) =
+        testPersonParameters(testCase)
                 .map { Pair(it.name, it.getter.call(testCase) as TestPerson) }.toMap()
 
 interface TestScript {
@@ -90,6 +97,7 @@ private open class TestScriptImpl : TestScriptBuilder {
                 .map { Pair(it.name!!, it) }.toMap() // All parameters are named
 
         val memberProperties = testCase::class.memberProperties
+                .filter { it.visibility != PRIVATE }
                 .map { Pair(it.name, it.getter.call(testCase)) }.toMap()
 
         declaredTestPersons(testCase).forEach { (name, testPerson) ->
@@ -98,6 +106,7 @@ private open class TestScriptImpl : TestScriptBuilder {
                             declaredTestPersons(
                                     testCaseConstructor.callBy(allConstructorParameters
                                             .filterKeys { it != name }
+                                            .filterKeys { memberProperties.containsKey(it) }
                                             .map { (parameterName, parameter) -> Pair(parameter, memberProperties[parameterName]) }.toMap()
                                     )
                             )[name]!!.searchCriteria)
@@ -108,7 +117,7 @@ private open class TestScriptImpl : TestScriptBuilder {
     }
 
     protected fun executeTestScriptSteps(testToolboxImpl: TestToolboxImpl): Any {
-        return steps.map { it.execute(testToolboxImpl) }.last()
+        return steps.asSequence().map { it.execute(testToolboxImpl) }.last()
     }
 }
 

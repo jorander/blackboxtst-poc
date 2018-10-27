@@ -2,40 +2,40 @@ package jorander.blackboxtstpoc.example
 
 import jorander.blackboxtstpoc.core.*
 import jorander.blackboxtstpoc.sut.*
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.lang.IllegalArgumentException
 
 class BasicTestCaseWithTest {
 
-    @Suppress("MemberVisibilityCanPrivate")
+    @Suppress("MemberVisibilityCanBePrivate")
     class BasicTestCase(
             val customer: TestPerson = TestPerson { "SEARCH_CRITERIA_2" },
             val relatedCustomer: TestPerson = TestPerson { "SEARCH_CRITERIA_RELATED_2" }
     ) : TestCase("A basic test case to demonstrate usage.") {
-        override fun test(): TestScript {
-            var documentId: DocumentId? = null
-            var caseId: CaseId? = null
 
-            return TestScript
-                    .include<Pair<DocumentId, CaseId>>(ReceiveDocument(customer, relatedCustomer)) { (dId, cId) ->
-                        println("documentId = $dId")
-                        documentId = dId
-                        println("caseId = $cId")
-                        caseId = cId
-                    }
-                    .step("Clerk marks document as final and closes case") {
-                        assertNotNull("DocumentId should not be null", documentId)
-                        val document = loadDocument(documentId!!)
-                        assertEquals("Document should be new", DocumentStatus.NEW, document.status)
-                        val updatedDocument = document.copy(status = DocumentStatus.FINAL)
-                        storeDocument(updatedDocument)
-                        assertEquals("Case should be closed", CaseStatus.CLOSED, loadCase(caseId!!).status)
-                    }
-        }
+        lateinit var documentId: DocumentId
+        lateinit var caseId: CaseId
+
+        override fun test() = TestScript
+                .include<Pair<DocumentId, CaseId>>(ReceiveDocument(customer, relatedCustomer)) { (dId, cId) ->
+                    println("documentId = $dId")
+                    documentId = dId
+                    println("caseId = $cId")
+                    caseId = cId
+                }
+                .step("Clerk marks document as final and closes case") {
+                    val document = loadDocument(documentId)
+                    assertEquals("Document should be new", DocumentStatus.NEW, document.status)
+                    val updatedDocument = document.copy(status = DocumentStatus.FINAL)
+                    storeDocument(updatedDocument)
+                    assertEquals("Case should be closed", CaseStatus.CLOSED, loadCase(caseId).status)
+                }
+
     }
 
 
+    @Suppress("LocalVariableName")
     @Test
     fun runHappyPath() {
         val CUSTOMERS_PNR = "123456789"
@@ -106,7 +106,7 @@ class BasicTestCaseWithTest {
 
     @Test(expected = AssertionError::class)
     fun runWithNullAsCaseId() {
-        BasicTestCase().run(object: TestToolboxImpl(){
+        BasicTestCase().run(object : TestToolboxImpl() {
             override fun findTestPerson(searchCriteria: String): TestPersonValues {
                 return TestPersonValues("Some PNR")
             }
